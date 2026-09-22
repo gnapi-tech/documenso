@@ -205,7 +205,14 @@ export const SignaturePadDraw = ({ className, value, onChange, ...props }: Signa
       ctx?.fill(pathData);
     });
 
-    onChange?.($el.current.toDataURL());
+    // A blank canvas's toDataURL() is still a non-empty (transparent-image) string, so undoing
+    // the last stroke must report '' explicitly -- same as onClearClick -- or a falsy check like
+    // `disabled={!signature}` downstream never sees the signature become empty. Only when there
+    // is no restored base image, though: with $imageData.current set (re-editing an
+    // already-saved signature), newLines.length === 0 means "back to that original image", which
+    // is still a real signature, not an empty one -- toDataURL() there correctly reflects it.
+    const isTrulyBlank = newLines.length === 0 && !$imageData.current;
+    onChange?.(isTrulyBlank ? '' : $el.current.toDataURL());
   };
 
   unsafe_useEffectOnce(() => {
